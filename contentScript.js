@@ -264,19 +264,30 @@ const inputKeyDownHandler = (e) => {
   }
 };
 
-const inputInputHandler = (e, fuzzysort) => {
+const inputInputHandler = async () => {
   globals.selectedTabIndex = 0;
 
-  const tabs = globals.tabs
+  const tabs = await getFilteredTabs();
+
+  populateTabsNav(tabs);
+};
+
+const getFilteredTabs = async () => {
+  const src = chrome.runtime.getURL("fuzzy.js");
+  const { fuzzysort } = await import(src);
+
+  const input = getShadowRoot().getElementById(constants.inputId);
+
+  const filteredTabs = globals.tabs
     .map((tab) => {
-      const res = fuzzysort().single(e.target.value.trim(), tab.title.trim());
+      const res = fuzzysort().single(input.value.trim(), tab.title.trim());
       const fuzzyOutput = fuzzysort().highlight(
         res,
         `<span id=${constants.highlightId}>`,
         "</span>"
       );
 
-      if (!res && e.target.value) {
+      if (!res && input.value) {
         return null;
       }
 
@@ -291,18 +302,18 @@ const inputInputHandler = (e, fuzzysort) => {
     .filter((tab) => tab.fuzzyScore > -2_000)
     .sort((a, b) => b.fuzzyScore - a.fuzzyScore);
 
-  if (tabs.length < 1) {
-    populateTabsNav([
+  if (filteredTabs.length < 1) {
+    return [
       {
         id: constants.newTabType,
-        title: e.target.value,
-        url: `${constants.webEngineUrl}${e.target.value}`,
+        title: input.value,
+        url: `${constants.webEngineUrl}${input.value}`,
         type: constants.newTabType,
       },
-    ]);
-  } else {
-    populateTabsNav(tabs);
+    ];
   }
+
+  return filteredTabs;
 };
 
 const switchTab = (tabId) => {
@@ -348,9 +359,8 @@ chrome.runtime.onMessage.addListener(async (request) => {
       globals.currentTabId = request.currentTabId;
     }
 
-    populateTabsNav(
-      request.tabs.map((tab) => ({ ...tab, type: constants.goToTabType }))
-    );
+    const tabs = await getFilteredTabs();
+    populateTabsNav(tabs);
   }
 
   const wantToOpen = request.action === "open";
@@ -364,14 +374,11 @@ chrome.runtime.onMessage.addListener(async (request) => {
     globals.selectedTabIndex = 0;
     globals.currentTabId = request.currentTabId;
 
-    await openRoot();
+    openRoot();
   }
 });
 
-const openRoot = async () => {
-  const src = chrome.runtime.getURL("fuzzy.js");
-  const { fuzzysort } = await import(src);
-
+const openRoot = () => {
   removeScroll();
 
   const shadowRoot = createShadowRoot();
@@ -379,7 +386,7 @@ const openRoot = async () => {
 
   const input = createInput();
   input.addEventListener("keydown", inputKeyDownHandler);
-  input.addEventListener("input", (e) => inputInputHandler(e, fuzzysort));
+  input.addEventListener("input", inputInputHandler);
 
   const tabsNav = createTabsNav();
 
