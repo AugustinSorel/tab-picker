@@ -74,11 +74,27 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 
   if (message.action === "closeTab") {
-    await chrome.tabs.remove(message.options.tabId);
+    chrome.tabs.remove(message.options.tabId);
   }
 
   if (message.action === "createNewTab") {
     chrome.tabs.create({ url: message.options.url });
+  }
+
+  if (message.action === "getHistory") {
+    const history =
+      message.options.input.length < 2
+        ? []
+        : await chrome.history.search({
+            text: message.options.input,
+          });
+
+    const currentTab = await getCurrentTab();
+
+    chrome.tabs.sendMessage(currentTab.id, {
+      action: "showHistory",
+      history: history.sort((a, b) => b.visitCount - a.visitCount).slice(0, 5),
+    });
   }
 });
 

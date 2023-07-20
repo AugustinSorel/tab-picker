@@ -11,6 +11,7 @@ const constants = {
 
   goToTabType: "goToTab",
   newTabType: "newTab",
+  historyTabType: "historyTabType",
 
   openKeybind: "a",
   closeKeybind: "Escape",
@@ -29,6 +30,7 @@ const constants = {
 
 const globals = {
   tabs: [],
+  historyTabs: [],
   selectedTabIndex: 0,
   currentTabId: null,
 };
@@ -156,8 +158,10 @@ const populateTabsNav = (tabs) => {
 
   const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
 
-  for (let i = 0; i < tabs.length; ++i) {
-    const tab = tabs[i];
+  for (const tab of tabs) {
+    if (!tab.title) {
+      continue;
+    }
 
     const tabItem = createTabItem(tab);
 
@@ -234,21 +238,18 @@ const inputKeyDownHandler = (e) => {
   }
 
   const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
+  const tab = tabsNav.childNodes.item(globals.selectedTabIndex);
 
-  if (goToTriggered) {
-    const tab = tabsNav.childNodes.item(globals.selectedTabIndex);
-
-    if (tab.dataset.type === constants.newTabType) {
-      createNewTab(tab.href);
-    }
-
-    if (tab.dataset.type === constants.goToTabType) {
-      switchTab(+tab.dataset.tabId);
-    }
+  if (goToTriggered && tab.dataset.type === constants.newTabType) {
+    createNewTab(tab.href);
   }
 
-  if (closeTabTriggered) {
-    closeTab(+tabsNav.childNodes.item(globals.selectedTabIndex).dataset.tabId);
+  if (goToTriggered && tab.dataset.type === constants.goToTabType) {
+    switchTab(+tab.dataset.tabId);
+  }
+
+  if (closeTabTriggered && tab.dataset.type === constants.goToTabType) {
+    closeTab(+tab.dataset.tabId);
   }
 
   if (moveUpTriggered) {
@@ -267,53 +268,52 @@ const inputKeyDownHandler = (e) => {
 const inputInputHandler = async () => {
   globals.selectedTabIndex = 0;
 
-  const tabs = await getFilteredTabs();
-
-  populateTabsNav(tabs);
+  readHistory();
 };
 
-const getFilteredTabs = async () => {
+const highlightTabsTitle = async (tabs) => {
   const src = chrome.runtime.getURL("fuzzy.js");
   const { fuzzysort } = await import(src);
 
   const input = getShadowRoot().getElementById(constants.inputId);
+  const inputValue = input.value.trim();
 
-  const filteredTabs = globals.tabs
-    .map((tab) => {
-      const res = fuzzysort().single(input.value.trim(), tab.title.trim());
-      const fuzzyOutput = fuzzysort().highlight(
-        res,
-        `<span id=${constants.highlightId}>`,
-        "</span>"
-      );
+  if (!inputValue) {
+    return tabs;
+  }
 
-      if (!res && input.value) {
-        return null;
-      }
+  return tabs.map((tab) => {
+    const res = fuzzysort().single(inputValue, tab.title.trim());
+    const fuzzyOutput = fuzzysort().highlight(
+      res,
+      `<span id=${constants.highlightId}>`,
+      "</span>"
+    );
 
-      return {
-        ...tab,
-        title: fuzzyOutput ?? tab.title,
-        fuzzyScore: res?.score ?? 0,
-        type: constants.goToTabType,
-      };
-    })
+    if (!res) {
+      return null;
+    }
+
+    return {
+      ...tab,
+      title: fuzzyOutput,
+      fuzzyScore: res.score,
+    };
+  });
+};
+
+const filterTabs = (tabs) => {
+  const input = getShadowRoot().getElementById(constants.inputId);
+  const inputValue = input.value.trim();
+
+  if (!inputValue) {
+    return tabs;
+  }
+
+  return tabs
     .filter(Boolean)
     .filter((tab) => tab.fuzzyScore > -2_000)
     .sort((a, b) => b.fuzzyScore - a.fuzzyScore);
-
-  if (filteredTabs.length < 1) {
-    return [
-      {
-        id: constants.newTabType,
-        title: input.value,
-        url: `${constants.webEngineUrl}${input.value}`,
-        type: constants.newTabType,
-      },
-    ];
-  }
-
-  return filteredTabs;
 };
 
 const switchTab = (tabId) => {
@@ -340,6 +340,15 @@ const createNewTab = (url) => {
   });
 };
 
+const readHistory = () => {
+  const input = getShadowRoot().getElementById(constants.inputId);
+
+  chrome.runtime.sendMessage({
+    action: "getHistory",
+    options: { input: input.value },
+  });
+};
+
 const removeScroll = () => {
   document.body.style.overflow = "hidden";
 };
@@ -359,8 +368,31 @@ chrome.runtime.onMessage.addListener(async (request) => {
       globals.currentTabId = request.currentTabId;
     }
 
-    const tabs = await getFilteredTabs();
-    populateTabsNav(tabs);
+    const goToTabs = globals.tabs.map((tab) => ({
+      ...tab,
+      type: constants.goToTabType,
+    }));
+
+    const historyTabs = globals.historyTabs.map((tab) => ({
+      ...tab,
+      type: constants.historyTabType,
+    }));
+
+    const input = getShadowRoot().getElementById(constants.inputId);
+    const newTab = {
+      title: input.value,
+      url: `${constants.webEngineUrl}${input.value}`,
+      type: constants.newTabType,
+    };
+
+    const highlightedTabs = await highlightTabsTitle([
+      ...historyTabs,
+      ...goToTabs,
+    ]);
+
+    const filteredTabs = filterTabs(highlightedTabs);
+
+    populateTabsNav([...filteredTabs, newTab]);
   }
 
   const wantToOpen = request.action === "open";
@@ -375,6 +407,36 @@ chrome.runtime.onMessage.addListener(async (request) => {
     globals.currentTabId = request.currentTabId;
 
     openRoot();
+  }
+
+  if (request.action === "showHistory") {
+    globals.historyTabs = request.history;
+
+    const goToTabs = globals.tabs.map((tab) => ({
+      ...tab,
+      type: constants.goToTabType,
+    }));
+
+    const historyTabs = globals.historyTabs.map((tab) => ({
+      ...tab,
+      type: constants.historyTabType,
+    }));
+
+    const input = getShadowRoot().getElementById(constants.inputId);
+    const newTab = {
+      title: input.value,
+      url: `${constants.webEngineUrl}${input.value}`,
+      type: constants.newTabType,
+    };
+
+    const highlightedTabs = await highlightTabsTitle([
+      ...historyTabs,
+      ...goToTabs,
+    ]);
+
+    const filteredTabs = filterTabs(highlightedTabs);
+
+    populateTabsNav([...filteredTabs, newTab]);
   }
 });
 
@@ -547,13 +609,21 @@ const css = `
 }
 
 #${constants.tabItemId}[aria-current="true"] > #${constants.tabTitleId}::before {
-  content: "* ";
+  content: "👉 ";
   color: hsl(var(--accent));
+  font-size: var(--font-size);
 }
 
 #${constants.tabItemId}[data-type=${constants.newTabType}] > #${constants.tabTitleId}::before {
-  content: "+ ";
+  content: "🔍 ";
   color: hsl(var(--accent));
+  font-size: var(--font-size);
+}
+
+#${constants.tabItemId}[data-type=${constants.historyTabType}] > #${constants.tabTitleId}::before {
+  content: "🕛 ";
+  color: hsl(var(--accent));
+  font-size: var(--font-size);
 }
 
 #${constants.tabUrlId} {
