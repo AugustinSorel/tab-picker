@@ -69,6 +69,7 @@ const getShadowRoot = () => {
 const createShadowRoot = () => {
   const shadowRoot = document.createElement("div");
   shadowRoot.id = constants.shadowRootId;
+  shadowRoot.className = constants.shadowRootId;
   shadowRoot.attachShadow({ mode: "open" });
   shadowRoot.shadowRoot.innerHTML = `<style>${css}</style>`;
   document.body.appendChild(shadowRoot);
@@ -79,6 +80,7 @@ const createShadowRoot = () => {
 const createRoot = () => {
   const rootElement = document.createElement("div");
   rootElement.id = constants.rootElementId;
+  rootElement.className = constants.rootElementId;
   rootElement.ariaExpanded = "true";
   rootElement.addEventListener("click", function (e) {
     if (this === e.target) {
@@ -95,6 +97,7 @@ const createInput = () => {
   input.placeholder = "Enter a tab...";
   input.autocomplete = "off";
   input.id = constants.inputId;
+  input.className = constants.inputId;
 
   input.addEventListener("focusout", (e) => {
     e.target.focus();
@@ -106,6 +109,7 @@ const createInput = () => {
 const createTabsNav = () => {
   const tabsNav = document.createElement("nav");
   tabsNav.id = constants.tabsNavId;
+  tabsNav.className = constants.tabsNavId;
 
   return tabsNav;
 };
@@ -113,8 +117,9 @@ const createTabsNav = () => {
 const createTabItem = (tab) => {
   const tabItem = document.createElement("a");
   tabItem.href = tab.url;
-  tabItem.id = constants.tabItemId;
-  tabItem.dataset.tabId = tab.id;
+  tabItem.id = `${constants.tabItemId}-${tab.id}`;
+  tabItem.className = constants.tabItemId;
+  tabItem.dataset.tabId = tab.id; //FIXME:remove this?
   tabItem.dataset.type = tab.type;
 
   tabItem.addEventListener("click", (e) => {
@@ -129,26 +134,29 @@ const createTabItem = (tab) => {
   return tabItem;
 };
 
-const createTabIcon = (iconSrc) => {
+const createTabIcon = (tab) => {
   const tabIcon = document.createElement("img");
-  tabIcon.id = constants.tabIconId;
-  tabIcon.src = iconSrc;
+  tabIcon.id = `${constants.tabIconId}-${tab.id}`;
+  tabIcon.className = constants.tabIconId;
+  tabIcon.src = tab.favIconUrl;
 
   return tabIcon;
 };
 
-const createTabTitle = (title) => {
+const createTabTitle = (tab) => {
   const tabTitle = document.createElement("span");
-  tabTitle.id = constants.tabTitleId;
-  tabTitle.innerHTML = title;
+  tabTitle.id = `${constants.tabTitleId}-${tab.id}`;
+  tabTitle.className = constants.tabTitleId;
+  tabTitle.innerHTML = tab.title;
 
   return tabTitle;
 };
 
-const createTabUrl = (url) => {
+const createTabUrl = (tab) => {
   const tabUrl = document.createElement("span");
-  tabUrl.id = constants.tabUrlId;
-  tabUrl.innerHTML = url;
+  tabUrl.id = `${constants.tabUrlId}-${tab.id}`;
+  tabUrl.className = constants.tabUrlId;
+  tabUrl.innerHTML = tab.url;
 
   return tabUrl;
 };
@@ -166,14 +174,14 @@ const populateTabsNav = (tabs) => {
     const tabItem = createTabItem(tab);
 
     if (tab.favIconUrl) {
-      const tabIcon = createTabIcon(tab.favIconUrl);
+      const tabIcon = createTabIcon(tab);
       tabItem.appendChild(tabIcon);
     }
 
-    const tabTitle = createTabTitle(tab.title);
+    const tabTitle = createTabTitle(tab);
     tabItem.appendChild(tabTitle);
 
-    const tabUrl = createTabUrl(tab.url);
+    const tabUrl = createTabUrl(tab);
     tabItem.appendChild(tabUrl);
 
     tabsNav.appendChild(tabItem);
@@ -290,7 +298,7 @@ const highlightTabsTitle = async (tabs) => {
     const res = fuzzysort().single(inputValue, tab.title.trim());
     const fuzzyOutput = fuzzysort().highlight(
       res,
-      `<span id=${constants.highlightId}>`,
+      `<span class=${constants.highlightId}>`,
       "</span>"
     );
 
@@ -470,7 +478,7 @@ const openRoot = () => {
 };
 
 const css = `
-#${constants.rootElementId} {
+.${constants.rootElementId} {
   --text-muted: 0, 0%, 50%;
   --color: 0, 0%, 0%;
   --background: 0, 0%, 100%;
@@ -493,7 +501,7 @@ const css = `
 }
 
 @media (prefers-color-scheme: dark) {
-  #${constants.rootElementId} {
+  .${constants.rootElementId} {
     --text-muted: 0, 0%, 50%;
     --color: 0, 0%, 100%;
     --background: 0, 0%, 0%;
@@ -502,7 +510,7 @@ const css = `
   }    
 }
 
-#${constants.rootElementId} {
+.${constants.rootElementId} {
   position: fixed;
   inset: 0;
   z-index: 10000;
@@ -513,17 +521,17 @@ const css = `
   font: var(--font-size) "Fira Sans", sans-serif;
 }
 
-#${constants.rootElementId}[aria-expanded="false"] {
+.${constants.rootElementId}[aria-expanded="false"] {
   display: none;
 }
 
-#${constants.rootElementId}[aria-expanded="true"] {
+.${constants.rootElementId}[aria-expanded="true"] {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-#${constants.inputId} {
+.${constants.inputId} {
   font-size: var(--font-xl);
   border-radius: var(--radius);
   width: var(--width);
@@ -536,15 +544,15 @@ const css = `
   outline: none;
 }
 
-#${constants.inputId}:focus {
+.${constants.inputId}:focus {
   outline: var(--border-size) solid hsl(var(--accent));
 }
 
-#${constants.inputId}::placeholder {
+.${constants.inputId}::placeholder {
   color: hsl(var(--text-muted));
 }
 
-#${constants.tabsNavId} {
+.${constants.tabsNavId} {
   margin: var(--gap-xl) var(--gap);
   background-color: white;
   color: black;
@@ -557,11 +565,11 @@ const css = `
   background-color: hsl(var(--background));
 }
 
-#${constants.tabsNavId}::-webkit-scrollbar {
+.${constants.tabsNavId}::-webkit-scrollbar {
   display: none;
 }
 
-#${constants.tabItemId} {
+.${constants.tabItemId} {
   font-size: var(--font-size-lg);
   text-decoration: none;
   display: grid;
@@ -576,34 +584,34 @@ const css = `
   color: hsl(var(--color), 0.75);
 }
 
-#${constants.tabItemId}[aria-selected="true"],
-#${constants.tabItemId}:focus {
+.${constants.tabItemId}[aria-selected="true"],
+.${constants.tabItemId}:focus {
   background-color: hsl(var(--color), 0.1);
   color: hsl(var(--accent), 0.8);
   outline: var(--border-size) solid hsl(var(--accent), 0.8);
   outline-offset: calc(var(--border-size) * -1);
 }
 
-#${constants.tabItemId}:first-child {
+.${constants.tabItemId}:first-child {
   padding-top: var(--gap-lg);
   border-top-left-radius: inherit;
   border-top-right-radius: inherit;
 }
 
-#${constants.tabItemId}:last-child {
+.${constants.tabItemId}:last-child {
   padding-bottom: var(--gap-lg);
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;
 }
 
-#${constants.tabIconId}{
+.${constants.tabIconId}{
   width: var(--font-size);
   height: var(--font-size);
   border-radius: 50%;
   grid-column: 1 / 1;
 }
 
-#${constants.tabTitleId} {
+.${constants.tabTitleId} {
   grid-column: 2 / 2;
 
   text-overflow: ellipsis;
@@ -615,25 +623,25 @@ const css = `
   font-size: var(--font-size-lg);
 }
 
-#${constants.tabItemId}[aria-current="true"] > #${constants.tabTitleId}::before {
+.${constants.tabItemId}[aria-current="true"] > .${constants.tabTitleId}::before {
   content: "👉 ";
   color: hsl(var(--accent));
   font-size: var(--font-size);
 }
 
-#${constants.tabItemId}[data-type=${constants.newTabType}] > #${constants.tabTitleId}::before {
+.${constants.tabItemId}[data-type=${constants.newTabType}] > .${constants.tabTitleId}::before {
   content: "🔍 ";
   color: hsl(var(--accent));
   font-size: var(--font-size);
 }
 
-#${constants.tabItemId}[data-type=${constants.historyTabType}] > #${constants.tabTitleId}::before {
+.${constants.tabItemId}[data-type=${constants.historyTabType}] > .${constants.tabTitleId}::before {
   content: "🕛 ";
   color: hsl(var(--accent));
   font-size: var(--font-size);
 }
 
-#${constants.tabUrlId} {
+.${constants.tabUrlId} {
   color: hsl(var(--text-muted));
   grid-column: 2 / 2;
   font-size: var(--font-size);
@@ -644,7 +652,7 @@ const css = `
   width: 100%;
 }
 
-#${constants.highlightId} {
+.${constants.highlightId} {
   text-decoration: hsl(var(--accent)) wavy underline;
 }
 `;
