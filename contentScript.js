@@ -163,10 +163,29 @@ const createTabUrl = (tab) => {
   return tabUrl;
 };
 
-const populateTabsNav = (tabs) => {
-  nukeTabs();
+const populateTabsNav = async () => {
+  const goToTabs = globals.tabs.map((tab) => ({
+    ...tab,
+    type: constants.goToTabType,
+  }));
 
-  const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
+  const historyTabs = globals.historyTabs.map((tab) => ({
+    ...tab,
+    type: constants.historyTabType,
+  }));
+
+  const highlightedTabs = await highlightTabsTitle([
+    ...goToTabs,
+    ...historyTabs,
+  ]);
+
+  const filteredTabs = filterTabs(highlightedTabs);
+  const sortedTabs = sortTabs(filteredTabs);
+
+  const newTab = getNewTab();
+  const tabs = [...sortedTabs, newTab];
+
+  nukeTabs();
 
   for (const tab of tabs) {
     if (!tab.title) {
@@ -175,7 +194,7 @@ const populateTabsNav = (tabs) => {
 
     const tabItem = createTabItem(tab);
 
-    if (tab.type === constants.goToTabType) {
+    if (tab.favIconUrl) {
       const tabIcon = createTabIcon(tab);
       tabItem.appendChild(tabIcon);
     }
@@ -186,20 +205,9 @@ const populateTabsNav = (tabs) => {
     const tabUrl = createTabUrl(tab);
     tabItem.appendChild(tabUrl);
 
+    const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
     tabsNav.appendChild(tabItem);
   }
-};
-
-const selectFirstTabItem = () => {
-  const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
-  const selectedTab = tabsNav.querySelector('[aria-selected="true"]');
-
-  if (selectedTab) {
-    selectedTab.ariaSelected = false;
-  }
-
-  tabsNav.firstChild.ariaSelected = true;
-  globals.selectedTabId = getTabIdFromTabItem(tabsNav.firstChild);
 
   scrollToSelectedTab();
 };
@@ -287,6 +295,12 @@ const inputKeyDownHandler = (e) => {
 const scrollToSelectedTab = () => {
   const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
   const selectedTab = tabsNav.querySelector("[aria-selected='true']");
+
+  if (!selectedTab) {
+    tabsNav.firstChild.ariaSelected = true;
+    tabsNav.firstChild.scrollIntoView({ block: "center" });
+    return;
+  }
 
   selectedTab.scrollIntoView({ block: "center" });
 };
@@ -428,6 +442,7 @@ const getNewTab = () => {
 chrome.runtime.onMessage.addListener(async (request) => {
   const refreshTabsTriggered = request.action === "refreshTabs";
   const isOpen = document.getElementById(constants.shadowRootId);
+  const wantToOpen = request.action === "open";
 
   if (refreshTabsTriggered && isOpen) {
     globals.tabs = request.tabs;
@@ -436,31 +451,8 @@ chrome.runtime.onMessage.addListener(async (request) => {
       globals.currentTabId = request.currentTabId;
     }
 
-    const goToTabs = globals.tabs.map((tab) => ({
-      ...tab,
-      type: constants.goToTabType,
-    }));
-
-    const historyTabs = globals.historyTabs.map((tab) => ({
-      ...tab,
-      type: constants.historyTabType,
-    }));
-
-    const newTab = getNewTab();
-
-    const highlightedTabs = await highlightTabsTitle([
-      ...goToTabs,
-      ...historyTabs,
-    ]);
-
-    const filteredTabs = filterTabs(highlightedTabs);
-    const sortedTabs = sortTabs(filteredTabs);
-
-    populateTabsNav([...sortedTabs, newTab]);
-    scrollToSelectedTab();
+    populateTabsNav();
   }
-
-  const wantToOpen = request.action === "open";
 
   if (wantToOpen && isOpen) {
     nukeShadowRoot();
@@ -476,28 +468,7 @@ chrome.runtime.onMessage.addListener(async (request) => {
   if (request.action === "showHistory") {
     globals.historyTabs = request.history;
 
-    const goToTabs = globals.tabs.map((tab) => ({
-      ...tab,
-      type: constants.goToTabType,
-    }));
-
-    const historyTabs = globals.historyTabs.map((tab) => ({
-      ...tab,
-      type: constants.historyTabType,
-    }));
-
-    const newTab = getNewTab();
-
-    const highlightedTabs = await highlightTabsTitle([
-      ...goToTabs,
-      ...historyTabs,
-    ]);
-
-    const filteredTabs = filterTabs(highlightedTabs);
-    const sortedTabs = sortTabs(filteredTabs);
-
-    populateTabsNav([...sortedTabs, newTab]);
-    selectFirstTabItem();
+    populateTabsNav();
   }
 });
 
@@ -517,13 +488,7 @@ const openRoot = () => {
   rootElement.appendChild(tabsNav);
   shadowRoot.shadowRoot.appendChild(rootElement);
 
-  const goToTabs = globals.tabs.map((tab) => ({
-    ...tab,
-    type: constants.goToTabType,
-  }));
-
-  populateTabsNav(goToTabs);
-  selectFirstTabItem();
+  populateTabsNav();
   input.focus();
 };
 
