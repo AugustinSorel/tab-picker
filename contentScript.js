@@ -31,7 +31,7 @@ const constants = {
 const globals = {
   tabs: [],
   historyTabs: [],
-  selectedTabIndex: 0,
+  selectedTabId: null,
   currentTabId: null,
 };
 
@@ -119,16 +119,18 @@ const createTabItem = (tab) => {
   tabItem.href = tab.url;
   tabItem.id = `${constants.tabItemId}-${tab.id}`;
   tabItem.className = constants.tabItemId;
-  tabItem.dataset.tabId = tab.id;
   tabItem.dataset.type = tab.type;
 
   tabItem.addEventListener("click", (e) => {
     e.preventDefault();
-    switchTab(tab.id);
   });
 
   if (tab.id === globals.currentTabId) {
     tabItem.ariaCurrent = true;
+  }
+
+  if (tab.id === globals.selectedTabId) {
+    tabItem.ariaSelected = true;
   }
 
   return tabItem;
@@ -186,39 +188,54 @@ const populateTabsNav = (tabs) => {
 
     tabsNav.appendChild(tabItem);
   }
-
-  showSelectedTabIndex(globals.selectedTabIndex);
 };
 
-const showSelectedTabIndex = (newIndex) => {
+const selectFirstTabItem = () => {
   const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
+  const selectedTab = tabsNav.querySelector('[aria-selected="true"]');
 
-  if (tabsNav.childNodes.length < 1) {
-    return;
+  if (selectedTab) {
+    selectedTab.ariaSelected = false;
   }
 
-  const isAtStart = newIndex < 0;
-  const isAtEnd = newIndex > tabsNav.childNodes.length - 1;
+  tabsNav.firstChild.ariaSelected = true;
+  globals.selectedTabId = getTabIdFromTabItem(tabsNav.firstChild);
 
-  const oldSelectedTabIndex = globals.selectedTabIndex;
+  scrollToSelectedTab();
+};
 
-  if (isAtStart) {
-    globals.selectedTabIndex = tabsNav.childNodes.length - 1;
+const selectTabItemBelow = () => {
+  const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
+  const selectedTab = tabsNav.querySelector("[aria-selected='true']");
+
+  selectedTab.ariaSelected = false;
+
+  if (!selectedTab.nextSibling) {
+    tabsNav.firstChild.ariaSelected = true;
+    globals.selectedTabId = getTabIdFromTabItem(tabsNav.firstChild);
+  } else {
+    selectedTab.nextSibling.ariaSelected = true;
+    globals.selectedTabId = getTabIdFromTabItem(selectedTab.nextSibling);
   }
 
-  if (isAtEnd) {
-    globals.selectedTabIndex = 0;
+  scrollToSelectedTab();
+};
+
+const selectTabItemAbove = () => {
+  const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
+  const selectedTab = tabsNav.querySelector("[aria-selected='true']");
+
+  selectedTab.ariaSelected = false;
+
+  if (!selectedTab.previousSibling) {
+    tabsNav.lastChild.ariaSelected = true;
+    globals.selectedTabId = getTabIdFromTabItem(tabsNav.lastChild);
+  } else {
+    selectedTab.previousSibling.ariaSelected = true;
+    globals.selectedTabId = getTabIdFromTabItem(selectedTab.previousSibling);
   }
 
-  if (!isAtEnd && !isAtStart) {
-    globals.selectedTabIndex = newIndex;
-  }
-
-  tabsNav.childNodes.item(oldSelectedTabIndex).ariaSelected = false;
-  tabsNav.childNodes.item(globals.selectedTabIndex).ariaSelected = true;
-  tabsNav.childNodes
-    .item(globals.selectedTabIndex)
-    .scrollIntoView({ block: "center" });
+  scrollToSelectedTab();
 };
 
 const inputKeyDownHandler = (e) => {
@@ -238,41 +255,48 @@ const inputKeyDownHandler = (e) => {
   }
 
   const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
-  const tab = tabsNav.childNodes.item(globals.selectedTabIndex);
+  const selectedTab = tabsNav.querySelector("[aria-selected='true']");
 
-  if (goToTriggered && tab.dataset.type === constants.newTabType) {
-    createNewTab(tab.href);
+  if (goToTriggered && selectedTab.dataset.type === constants.newTabType) {
+    createNewTab(selectedTab.href);
   }
 
-  if (goToTriggered && tab.dataset.type === constants.historyTabType) {
-    createNewTab(tab.href);
+  if (goToTriggered && selectedTab.dataset.type === constants.historyTabType) {
+    createNewTab(selectedTab.href);
   }
 
-  if (goToTriggered && tab.dataset.type === constants.goToTabType) {
-    switchTab(+tab.dataset.tabId);
+  if (goToTriggered && selectedTab.dataset.type === constants.goToTabType) {
+    switchTab(globals.selectedTabId);
   }
 
-  if (closeTabTriggered && tab.dataset.type === constants.goToTabType) {
-    closeTab(+tab.dataset.tabId);
+  if (closeTabTriggered && selectedTab.dataset.type === constants.goToTabType) {
+    closeTab(globals.selectedTabId);
   }
 
   if (moveUpTriggered) {
     e.preventDefault();
-
-    showSelectedTabIndex(globals.selectedTabIndex - 1);
+    selectTabItemAbove();
   }
 
   if (moveDownTriggered) {
     e.preventDefault();
-
-    showSelectedTabIndex(globals.selectedTabIndex + 1);
+    selectTabItemBelow();
   }
+};
+
+const scrollToSelectedTab = () => {
+  const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
+  const selectedTab = tabsNav.querySelector("[aria-selected='true']");
+
+  selectedTab.scrollIntoView({ block: "center" });
+};
+
+const getTabIdFromTabItem = (tab) => {
+  return +tab.id.split("-")[2];
 };
 
 const inputInputHandler = async (e) => {
   e.stopPropagation();
-
-  globals.selectedTabIndex = 0;
 
   readHistory();
 };
@@ -316,10 +340,17 @@ const filterTabs = (tabs) => {
     return tabs;
   }
 
-  return tabs
-    .filter(Boolean)
-    .filter((tab) => tab.fuzzyScore > -2_000)
-    .sort((a, b) => b.fuzzyScore - a.fuzzyScore);
+  return tabs.filter(Boolean).filter((tab) => tab.fuzzyScore > -2_000);
+};
+
+const sortTabs = (tabs) => {
+  return tabs.sort((a, b) => {
+    if (a.type !== b.type) {
+      return a.type === constants.goToTabType ? -1 : 1;
+    }
+
+    return b.fuzzyScore - a.fuzzyScore;
+  });
 };
 
 const switchTab = (tabId) => {
@@ -331,6 +362,15 @@ const switchTab = (tabId) => {
 };
 
 const closeTab = (tabId) => {
+  const tabsNav = getShadowRoot().getElementById(constants.tabsNavId);
+  const selectedTab = tabsNav.querySelector("[aria-selected='true']");
+
+  if (!selectedTab.nextSibling) {
+    globals.selectedTabId = getTabIdFromTabItem(selectedTab.previousSibling);
+  } else {
+    globals.selectedTabId = getTabIdFromTabItem(selectedTab.nextSibling);
+  }
+
   chrome.runtime.sendMessage({
     action: constants.closeTab,
     options: { tabId },
@@ -392,10 +432,6 @@ chrome.runtime.onMessage.addListener(async (request) => {
   if (refreshTabsTriggered && isOpen) {
     globals.tabs = request.tabs;
 
-    if (globals.selectedTabIndex > globals.tabs.length - 1) {
-      globals.selectedTabIndex = globals.tabs.length - 1;
-    }
-
     if (request.currentTabId) {
       globals.currentTabId = request.currentTabId;
     }
@@ -413,13 +449,15 @@ chrome.runtime.onMessage.addListener(async (request) => {
     const newTab = getNewTab();
 
     const highlightedTabs = await highlightTabsTitle([
-      ...historyTabs,
       ...goToTabs,
+      ...historyTabs,
     ]);
 
     const filteredTabs = filterTabs(highlightedTabs);
+    const sortedTabs = sortTabs(filteredTabs);
 
-    populateTabsNav([...filteredTabs, newTab]);
+    populateTabsNav([...sortedTabs, newTab]);
+    scrollToSelectedTab();
   }
 
   const wantToOpen = request.action === "open";
@@ -430,7 +468,6 @@ chrome.runtime.onMessage.addListener(async (request) => {
 
   if (wantToOpen && !isOpen) {
     globals.tabs = request.tabs;
-    globals.selectedTabIndex = 0;
     globals.currentTabId = request.currentTabId;
 
     openRoot();
@@ -452,13 +489,15 @@ chrome.runtime.onMessage.addListener(async (request) => {
     const newTab = getNewTab();
 
     const highlightedTabs = await highlightTabsTitle([
-      ...historyTabs,
       ...goToTabs,
+      ...historyTabs,
     ]);
 
     const filteredTabs = filterTabs(highlightedTabs);
+    const sortedTabs = sortTabs(filteredTabs);
 
-    populateTabsNav([...filteredTabs, newTab]);
+    populateTabsNav([...sortedTabs, newTab]);
+    selectFirstTabItem();
   }
 });
 
@@ -484,6 +523,7 @@ const openRoot = () => {
   }));
 
   populateTabsNav(goToTabs);
+  selectFirstTabItem();
   input.focus();
 };
 
