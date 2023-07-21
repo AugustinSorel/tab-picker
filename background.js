@@ -87,6 +87,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         ? []
         : await chrome.history.search({
             text: message.options.input,
+            startTime: new Date().setDate(new Date().getDate() - 7),
           });
 
     const currentTab = await getCurrentTab();

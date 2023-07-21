@@ -119,7 +119,7 @@ const createTabItem = (tab) => {
   tabItem.href = tab.url;
   tabItem.id = `${constants.tabItemId}-${tab.id}`;
   tabItem.className = constants.tabItemId;
-  tabItem.dataset.tabId = tab.id; //FIXME:remove this?
+  tabItem.dataset.tabId = tab.id;
   tabItem.dataset.type = tab.type;
 
   tabItem.addEventListener("click", (e) => {
@@ -173,7 +173,7 @@ const populateTabsNav = (tabs) => {
 
     const tabItem = createTabItem(tab);
 
-    if (tab.favIconUrl) {
+    if (tab.type === constants.goToTabType) {
       const tabIcon = createTabIcon(tab);
       tabItem.appendChild(tabIcon);
     }
@@ -229,16 +229,6 @@ const inputKeyDownHandler = (e) => {
   const goToTriggered = e.code === constants.goToKeybind;
   const closeTabTriggered = e.altKey && e.key === constants.closeTabKeybind;
   const closeTriggered = e.code === constants.closeKeybind;
-
-  if (
-    !moveUpTriggered &&
-    !moveDownTriggered &&
-    !goToTriggered &&
-    !closeTabTriggered &&
-    !closeTriggered
-  ) {
-    return;
-  }
 
   if (closeTriggered) {
     nukeShadowRoot();
@@ -365,6 +355,32 @@ const removeScroll = () => {
   document.body.style.overflow = "hidden";
 };
 
+const getNewTab = () => {
+  const input = getShadowRoot().getElementById(constants.inputId);
+
+  let url = `${constants.webEngineUrl}${input.value}`;
+
+  if (input.value.startsWith("http")) {
+    url = `${input.value}`;
+  }
+
+  if (input.value.split("").includes(".")) {
+    url = `https://${input.value}`;
+  }
+
+  if (input.value.split("").includes(":")) {
+    url = `https://${input.value}`;
+  }
+
+  const newTab = {
+    title: input.value,
+    type: constants.newTabType,
+    url,
+  };
+
+  return newTab;
+};
+
 chrome.runtime.onMessage.addListener(async (request) => {
   const refreshTabsTriggered = request.action === "refreshTabs";
   const isOpen = document.getElementById(constants.shadowRootId);
@@ -390,12 +406,7 @@ chrome.runtime.onMessage.addListener(async (request) => {
       type: constants.historyTabType,
     }));
 
-    const input = getShadowRoot().getElementById(constants.inputId);
-    const newTab = {
-      title: input.value,
-      url: `${constants.webEngineUrl}${input.value}`,
-      type: constants.newTabType,
-    };
+    const newTab = getNewTab();
 
     const highlightedTabs = await highlightTabsTitle([
       ...historyTabs,
@@ -434,12 +445,7 @@ chrome.runtime.onMessage.addListener(async (request) => {
       type: constants.historyTabType,
     }));
 
-    const input = getShadowRoot().getElementById(constants.inputId);
-    const newTab = {
-      title: input.value,
-      url: `${constants.webEngineUrl}${input.value}`,
-      type: constants.newTabType,
-    };
+    const newTab = getNewTab();
 
     const highlightedTabs = await highlightTabsTitle([
       ...historyTabs,
