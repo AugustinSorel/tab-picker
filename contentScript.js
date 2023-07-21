@@ -244,6 +244,10 @@ const inputKeyDownHandler = (e) => {
     createNewTab(tab.href);
   }
 
+  if (goToTriggered && tab.dataset.type === constants.historyTabType) {
+    createNewTab(tab.href);
+  }
+
   if (goToTriggered && tab.dataset.type === constants.goToTabType) {
     switchTab(+tab.dataset.tabId);
   }
@@ -456,9 +460,12 @@ const openRoot = () => {
   rootElement.appendChild(tabsNav);
   shadowRoot.shadowRoot.appendChild(rootElement);
 
-  populateTabsNav(
-    globals.tabs.map((tab) => ({ ...tab, type: constants.goToTabType }))
-  );
+  const goToTabs = globals.tabs.map((tab) => ({
+    ...tab,
+    type: constants.goToTabType,
+  }));
+
+  populateTabsNav(goToTabs);
   input.focus();
 };
 
