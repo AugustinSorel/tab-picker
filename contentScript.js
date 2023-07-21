@@ -222,6 +222,8 @@ const showSelectedTabIndex = (newIndex) => {
 };
 
 const inputKeyDownHandler = (e) => {
+  e.stopPropagation();
+
   const moveUpTriggered =
     e.code === constants.moveUpKeybind || (e.code === "Tab" && e.shiftKey);
   const moveDownTriggered =
@@ -267,7 +269,9 @@ const inputKeyDownHandler = (e) => {
   }
 };
 
-const inputInputHandler = async () => {
+const inputInputHandler = async (e) => {
+  e.stopPropagation();
+
   globals.selectedTabIndex = 0;
 
   readHistory();
