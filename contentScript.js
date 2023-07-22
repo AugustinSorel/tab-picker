@@ -159,11 +159,11 @@ const createTabItem = (tab) => {
     e.preventDefault();
   });
 
-  if (tab.id === globals.currentTabId) {
+  if (+tab.id === globals.currentTabId) {
     tabItem.ariaCurrent = true;
   }
 
-  if (tab.id === globals.selectedTabId) {
+  if (+tab.id === globals.selectedTabId) {
     tabItem.ariaSelected = true;
   }
 
@@ -345,6 +345,7 @@ const getTabIdFromTabItem = (tab) => {
 
 const inputInputHandler = async (e) => {
   e.stopPropagation();
+  globals.selectedTabId = null;
 
   readHistory();
 };
@@ -465,6 +466,7 @@ const getNewTab = () => {
   }
 
   const newTab = {
+    id: "1",
     title: input.value,
     type: constants.newTabType,
     url,
@@ -508,6 +510,7 @@ chrome.runtime.onMessage.addListener(async (request) => {
 
 const openRoot = () => {
   removeScroll();
+  globals.selectedTabId = null;
 
   const shadowRoot = createShadowRoot();
   const rootElement = createRoot();
