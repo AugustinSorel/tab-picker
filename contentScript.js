@@ -1,7 +1,9 @@
 const constants = {
   shadowRootId: "shadow-root",
   rootElementId: "root",
+  inputFormId: "inputForm",
   inputId: "input",
+  githubLinkId: "githubLink",
   tabsNavId: "tabs-nav",
   tabItemId: "result-item",
   tabIconId: "tab-icon",
@@ -91,6 +93,14 @@ const createRoot = () => {
   return rootElement;
 };
 
+const createInputForm = () => {
+  const form = document.createElement("form");
+  form.id = constants.inputFormId;
+  form.className = constants.inputFormId;
+
+  return form;
+};
+
 const createInput = () => {
   const input = document.createElement("input");
   input.tabIndex = 0;
@@ -104,6 +114,30 @@ const createInput = () => {
   });
 
   return input;
+};
+
+const createGithubLink = () => {
+  const githubLink = document.createElement("a");
+  githubLink.id = constants.githubLinkId;
+  githubLink.className = constants.githubLinkId;
+  githubLink.href = "https://github.com/augustinsorel/tab-picker";
+  githubLink.dataset.tooltip = "github";
+  githubLink.target = "_blank";
+  githubLink.innerHTML = `
+    <svg 
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+    >
+        <circle cx="12" cy="12" r="10"/>
+        <path d="m4.93 4.93 4.24 4.24"/>
+        <path d="m14.83 9.17 4.24-4.24"/>
+        <path d="m14.83 14.83 4.24 4.24"/>
+        <path d="m9.17 14.83-4.24 4.24"/>
+        <circle cx="12" cy="12" r="4"/>
+    </svg>    
+  `;
+
+  return githubLink;
 };
 
 const createTabsNav = () => {
@@ -482,9 +516,15 @@ const openRoot = () => {
   input.addEventListener("keydown", inputKeyDownHandler);
   input.addEventListener("input", inputInputHandler);
 
+  const githubLink = createGithubLink();
+
+  const inputForm = createInputForm();
+  inputForm.appendChild(input);
+  inputForm.appendChild(githubLink);
+
   const tabsNav = createTabsNav();
 
-  rootElement.appendChild(input);
+  rootElement.appendChild(inputForm);
   rootElement.appendChild(tabsNav);
   shadowRoot.shadowRoot.appendChild(rootElement);
 
@@ -493,6 +533,10 @@ const openRoot = () => {
 };
 
 const css = `
+*{
+  box-sizing: border-box;
+}
+
 .${constants.rootElementId} {
   --text-muted: 0, 0%, 50%;
   --color: 0, 0%, 0%;
@@ -509,7 +553,7 @@ const css = `
   --font-size-lg: 24px;
   --font-xl: 32px;
 
-  --gapp-xs: 8px;
+  --gap-xs: 8px;
   --gap: 16px;
   --gap-lg: 32px;
   --gap-xl: 48px;
@@ -546,25 +590,86 @@ const css = `
   align-items: center;
 }
 
-.${constants.inputId} {
-  font-size: var(--font-xl);
+.${constants.inputFormId} {
+  background-color: hsl(var(--background));
   border-radius: var(--radius);
   width: var(--width);
-  padding: var(--gap) var(--gap-lg);
+  min-height: 75px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--gap-lg);
+}
+
+
+.${constants.inputFormId}:focus-within {
+  outline: var(--border-size) solid hsl(var(--accent));
+ }
+
+
+.${constants.inputId} {
+  font-size: var(--font-xl);
   color: hsl(var(--color));
-  background-color: hsl(var(--background));
-  box-sizing: border-box;
+  background-color:transparent;
 
   border: none;
   outline: none;
 }
 
-.${constants.inputId}:focus {
-  outline: var(--border-size) solid hsl(var(--accent));
-}
-
 .${constants.inputId}::placeholder {
   color: hsl(var(--text-muted));
+}
+
+.${constants.githubLinkId} {
+  padding:1rem;
+  border-radius: inherit;
+  color: hsl(var(--text-muted));
+  outline: var(--border-size) solid transparent;
+  transition-property: color, background-color, outline-color;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+  position: relative;
+  isolation: isolate;
+}
+
+.${constants.githubLinkId} svg {
+  stroke: currentColor;
+  stroke-width: var(--border-size);
+  height: 24px;
+  width: 24px;
+  display:flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.${constants.githubLinkId}:hover {
+  color: hsl(var(--accent), 0.8);
+  background-color: hsl(var(--color), 0.1);
+  outline: var(--border-size) solid;
+  outline-color:currentColor;
+}
+
+.${constants.githubLinkId}::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -50px;
+  left: 50%;
+  translate: -50%;
+  padding: var(--gap-xs) var(--gap);
+  z-index: 200;
+  background-color: hsl(var(--background));
+  white-space:nowrap;
+  border-radius: inherit;
+  border: var(--border-size) solid currentColor;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.${constants.githubLinkId}:hover::after {
+  opacity: 1;
+  transition-delay: 1000ms;
 }
 
 .${constants.tabsNavId} {
