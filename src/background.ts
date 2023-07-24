@@ -1,13 +1,17 @@
 import type { ContentScriptRequest, ResultItem } from "./contentScript";
 
 const getAllTabs = () => {
-  return chrome.tabs.query({}) ?? [];
+  return (
+    chrome.tabs.query({
+      currentWindow: true,
+    }) ?? []
+  );
 };
 
 const getCurrentTab = async () => {
   let [tab] = await chrome.tabs.query({
     active: true,
-    lastFocusedWindow: true,
+    currentWindow: true,
   });
 
   return tab;
