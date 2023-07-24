@@ -141,6 +141,7 @@ const createRoot = () => {
   rootElement.addEventListener("click", function (e) {
     if (this === e.target) {
       nukeShadowRoot();
+      restoreScroll();
     }
   });
 
@@ -213,17 +214,20 @@ const inputKeyDownHandler = async (e: KeyboardEvent) => {
   if (goToTriggered && selectedResultItem.dataset.type === "new") {
     await createNewTab(selectedResultItem.href);
     nukeShadowRoot();
+    restoreScroll();
   }
 
   if (goToTriggered && selectedResultItem.dataset.type === "history") {
     await createNewTab(selectedResultItem.href);
     nukeShadowRoot();
+    restoreScroll();
   }
 
   if (goToTriggered && selectedResultItem.dataset.type === "goTo") {
     const tabId = convertResultItemIdToTabId(selectedResultItem.id);
     await goToTab(tabId);
     nukeShadowRoot();
+    restoreScroll();
   }
 
   if (closeTabTriggered && selectedResultItem.dataset.type === "goTo") {
