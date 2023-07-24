@@ -8,7 +8,7 @@
   "commands": {
     "open": {
       "suggested_key": {
-        "default": "Ctrl+Shift+F"
+        "default": "Alt+Shift+F"
       },
       "description": "open or close tab picker"
     }

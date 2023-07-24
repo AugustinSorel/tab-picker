@@ -13,13 +13,6 @@ const constants = {
   resultItemTitleId: "result-item-title",
   resultItemUrl: "result-item-url",
   highlightId: "highlight",
-
-  openKeybind: "a",
-  closeKeybind: "Escape",
-  moveUpKeybind: "ArrowUp",
-  moveDownKeybind: "ArrowDown",
-  goToKeybind: "Enter",
-  closeTabKeybind: "w",
 } as const;
 
 export type ResultItem = {
@@ -179,12 +172,17 @@ const inputKeyDownHandler = async (e: KeyboardEvent) => {
   e.stopPropagation();
 
   const moveUpTriggered =
-    e.code === constants.moveUpKeybind || (e.code === "Tab" && e.shiftKey);
+    e.code === "ArrowUp" ||
+    (e.code === "Tab" && e.shiftKey) ||
+    (e.altKey && e.key === "k");
+
   const moveDownTriggered =
-    e.code === constants.moveDownKeybind || (e.code === "Tab" && !e.shiftKey);
-  const goToTriggered = e.code === constants.goToKeybind;
-  const closeTabTriggered = e.altKey && e.key === constants.closeTabKeybind;
-  const closeTriggered = e.code === constants.closeKeybind;
+    e.code === "ArrowDown" ||
+    (e.code === "Tab" && !e.shiftKey) ||
+    (e.altKey && e.key === "j");
+  const goToTriggered = e.code === "Enter";
+  const closeTabTriggered = e.altKey && e.key === "w";
+  const closeTriggered = e.code === "Escape";
 
   if (closeTriggered) {
     nukeShadowRoot();
