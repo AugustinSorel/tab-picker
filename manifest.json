@@ -1,7 +1,7 @@
 {
-  "name": "INJECT HTML",
+  "name": "Tab Picker",
   "version": "0.01",
-  "description": "hello",
+  "description": "todo",
   "background": {
     "service_worker": "background.js"
   },
@@ -10,7 +10,7 @@
       "suggested_key": {
         "default": "Ctrl+Shift+F"
       },
-      "description": "open tab picker"
+      "description": "open or close tab picker"
     }
   },
   "content_scripts": [
@@ -19,19 +19,9 @@
         "<all_urls>"
       ],
       "js": [
-        "background.js"
+        "contentScript.js"
       ],
       "run_at": "document_end"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "matches": [
-        "<all_urls>"
-      ],
-      "resources": [
-        "fuzzy.js"
-      ]
     }
   ],
   "permissions": [
