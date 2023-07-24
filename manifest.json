@@ -1,7 +1,7 @@
 {
   "name": "Tab Picker",
   "version": "0.01",
-  "description": "todo",
+  "description": "Tab Picker is a fuzzy finder for chrome tabs. Open the Tab Picker with Alt+Shift+F.",
   "background": {
     "service_worker": "background.js"
   },
@@ -32,5 +32,11 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "icons": {
+    "16": "icon_16.png",
+    "32": "icon_32.png",
+    "48": "icon_48.png",
+    "128": "icon_128.png"
+  },
   "manifest_version": 3
 }

@@ -25,11 +25,18 @@ module.exports = {
       },
     ],
   },
+  optimization: {
+    minimize: false,
+  },
   plugins: [
     new CopyWebpackPlugin({
       patterns: [
         {
           from: path.resolve(__dirname, "..", "manifest.json"),
+          to: path.join(__dirname, "../dist"),
+        },
+        {
+          from: path.resolve(__dirname, "..", "assets"),
           to: path.join(__dirname, "../dist"),
         },
       ],
