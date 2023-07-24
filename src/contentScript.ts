@@ -204,6 +204,7 @@ const inputKeyDownHandler = async (e: KeyboardEvent) => {
 
   if (closeTriggered) {
     nukeShadowRoot();
+    restoreScroll();
     return;
   }
 
