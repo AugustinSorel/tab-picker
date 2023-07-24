@@ -100,6 +100,23 @@ const getSelectedResultItem = () => {
   return selectedResultItem;
 };
 
+const getCurrentResultItem = () => {
+  const resultItemsContainer = getShadowRootChild<HTMLElement>(
+    "resultItemsContainer"
+  );
+
+  const currentResultItemm =
+    resultItemsContainer.querySelector<ResultItemElement>(
+      "[aria-current='true']"
+    );
+
+  if (!currentResultItemm) {
+    throw new Error("cannot find current result item");
+  }
+
+  return currentResultItemm;
+};
+
 const createShadowRoot = () => {
   const shadowRoot = document.createElement("div");
   shadowRoot.id = constants.shadowRootId;
@@ -441,7 +458,8 @@ chrome.runtime.onMessage.addListener(async (request: ContentScriptRequest) => {
 
     populateResultItemsContainer(filteredItems);
 
-    selectFirstResultItem();
+    const currentResultItem = getCurrentResultItem();
+    currentResultItem.ariaSelected = "true";
     scrollToSelectedResultItem();
   }
 
@@ -501,17 +519,8 @@ const selectFirstResultItem = () => {
 };
 
 const scrollToSelectedResultItem = () => {
-  const resultItemsContainer = getShadowRootChild<HTMLElement>(
-    "resultItemsContainer"
-  );
-
-  const selectedTab = resultItemsContainer.querySelector(
-    "[aria-selected='true']"
-  );
-
-  if (selectedTab) {
-    selectedTab.scrollIntoView({ block: "center" });
-  }
+  const selectedResultItem = getSelectedResultItem();
+  selectedResultItem.scrollIntoView({ block: "center" });
 };
 
 const filterResultItems = (resultItems: ResultItem[]): ResultItem[] => {
