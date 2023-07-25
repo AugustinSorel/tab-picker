@@ -12,7 +12,7 @@ chrome extension:
 ### Home
 ![Screenshot from 2023-07-24 14-50-00](https://github.com/AugustinSorel/tab-picker/assets/48162609/89843da6-4d06-42aa-a749-5e4b0473a2c5)
 
-### Searchingk
+### Searching
 ![Screenshot from 2023-07-24 14-50-15](https://github.com/AugustinSorel/tab-picker/assets/48162609/5326af78-e0cf-41a4-96eb-e5d1acd7314d)
 
 ## Keymaps
