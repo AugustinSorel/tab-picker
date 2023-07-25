@@ -74,6 +74,7 @@
   font-size: var(--font-xl);
   color: hsl(var(--color));
   background-color: transparent;
+  flex: 1;
 
   border: none;
   outline: none;
