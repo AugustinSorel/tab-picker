@@ -199,6 +199,8 @@ const inputKeyDownHandler = async (e: KeyboardEvent) => {
     e.code === "ArrowDown" ||
     (e.code === "Tab" && !e.shiftKey) ||
     (e.altKey && e.key === "J");
+
+  const duplicateTabTriggered = e.altKey && e.key === "D";
   const goToTriggered = e.code === "Enter";
   const closeTabTriggered = e.altKey && e.key === "W";
   const closeTriggered = e.code === "Escape";
@@ -210,6 +212,13 @@ const inputKeyDownHandler = async (e: KeyboardEvent) => {
   }
 
   const selectedResultItem = getSelectedResultItem();
+
+  if (duplicateTabTriggered && selectedResultItem.dataset.type === "goTo") {
+    const tabId = convertResultItemIdToTabId(selectedResultItem.id);
+    await duplicateSelectedTab(tabId);
+    nukeShadowRoot();
+    restoreScroll();
+  }
 
   if (goToTriggered && selectedResultItem.dataset.type === "new") {
     await createNewTab(selectedResultItem.href);
@@ -465,6 +474,7 @@ chrome.runtime.onMessage.addListener(async (request: ContentScriptRequest) => {
 
     const currentResultItem = getCurrentResultItem();
     currentResultItem.ariaSelected = "true";
+    globals.selectedResultItemId = currentResultItem.id;
     scrollToSelectedResultItem();
   }
 
@@ -620,6 +630,15 @@ const openRoot = () => {
   shadowRoot.shadowRoot.appendChild(rootElement);
 
   input.focus();
+};
+
+const duplicateSelectedTab = async (
+  tabId: NonNullable<chrome.tabs.Tab["id"]>
+) => {
+  await chrome.runtime.sendMessage<BackgroundListener>({
+    action: "duplicateTab",
+    options: { tabId },
+  });
 };
 
 const createNewTab = async (url: string) => {
