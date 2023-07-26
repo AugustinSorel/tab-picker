@@ -474,6 +474,7 @@ chrome.runtime.onMessage.addListener(async (request: ContentScriptRequest) => {
 
     const currentResultItem = getCurrentResultItem();
     currentResultItem.ariaSelected = "true";
+    globals.selectedResultItemId = currentResultItem.id;
     scrollToSelectedResultItem();
   }
 
