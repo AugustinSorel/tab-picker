@@ -76,7 +76,19 @@ type GetFreshTabs = {
   };
 };
 
-export type BackgroundListener = GoTo | Close | NewTab | GetFreshTabs;
+type DuplicateTab = {
+  action: "duplicateTab";
+  options: {
+    tabId: NonNullable<chrome.tabs.Tab["id"]>;
+  };
+};
+
+export type BackgroundListener =
+  | GoTo
+  | Close
+  | NewTab
+  | GetFreshTabs
+  | DuplicateTab;
 
 chrome.tabs.onRemoved.addListener(async () => {
   const tabs = await getAllTabs();
@@ -157,6 +169,10 @@ chrome.runtime.onMessage.addListener(
 
     if (message.action === "newTab") {
       await chrome.tabs.create({ url: message.options.url });
+    }
+
+    if (message.action === "duplicateTab") {
+      await chrome.tabs.duplicate(message.options.tabId);
     }
   }
 );
