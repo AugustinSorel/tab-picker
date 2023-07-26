@@ -157,7 +157,9 @@ chrome.runtime.onMessage.addListener(
         const history = await getHistory(message.options.input);
 
         resultItems = resultItems.concat(
-          transformTabsToHistoryResultItems(history).slice(0, 5)
+          transformTabsToHistoryResultItems(
+            history.sort((a, b) => (b.visitCount ?? 0) - (a.visitCount ?? 0))
+          ).slice(0, 5)
         );
       }
 
