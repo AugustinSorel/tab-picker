@@ -199,6 +199,8 @@ const inputKeyDownHandler = async (e: KeyboardEvent) => {
     e.code === "ArrowDown" ||
     (e.code === "Tab" && !e.shiftKey) ||
     (e.altKey && e.key === "J");
+
+  const duplicateTabTriggered = e.altKey && e.key === "D";
   const goToTriggered = e.code === "Enter";
   const closeTabTriggered = e.altKey && e.key === "W";
   const closeTriggered = e.code === "Escape";
@@ -210,6 +212,10 @@ const inputKeyDownHandler = async (e: KeyboardEvent) => {
   }
 
   const selectedResultItem = getSelectedResultItem();
+
+  if (duplicateTabTriggered && selectedResultItem.dataset.type === "goTo") {
+    console.log("lets duplicate", selectedResultItem);
+  }
 
   if (goToTriggered && selectedResultItem.dataset.type === "new") {
     await createNewTab(selectedResultItem.href);
