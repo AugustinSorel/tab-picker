@@ -214,7 +214,10 @@ const inputKeyDownHandler = async (e: KeyboardEvent) => {
   const selectedResultItem = getSelectedResultItem();
 
   if (duplicateTabTriggered && selectedResultItem.dataset.type === "goTo") {
-    console.log("lets duplicate", selectedResultItem);
+    const tabId = convertResultItemIdToTabId(selectedResultItem.id);
+    await duplicateSelectedTab(tabId);
+    nukeShadowRoot();
+    restoreScroll();
   }
 
   if (goToTriggered && selectedResultItem.dataset.type === "new") {
@@ -626,6 +629,15 @@ const openRoot = () => {
   shadowRoot.shadowRoot.appendChild(rootElement);
 
   input.focus();
+};
+
+const duplicateSelectedTab = async (
+  tabId: NonNullable<chrome.tabs.Tab["id"]>
+) => {
+  await chrome.runtime.sendMessage<BackgroundListener>({
+    action: "duplicateTab",
+    options: { tabId },
+  });
 };
 
 const createNewTab = async (url: string) => {
