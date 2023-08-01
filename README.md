@@ -4,9 +4,9 @@ Tab Picker is a fuzzy finder to manage your chrome tabs.
 
 ## Demo
 
-youtube:
+youtube: https://youtu.be/ak1na04cDMY
 
-chrome extension:
+chrome extension: https://chrome.google.com/webstore/detail/tab-picker/pgeknmenofnlhkmpafcchbkblkcbecmi?hl=en&authuser=0
 
 ## Images
 
