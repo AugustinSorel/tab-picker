@@ -12,11 +12,12 @@ chrome extension: https://chrome.google.com/webstore/detail/tab-picker/pgeknmeno
 
 ### Home
 
-![Screenshot from 2023-07-24 14-50-00](https://github.com/AugustinSorel/tab-picker/assets/48162609/89843da6-4d06-42aa-a749-5e4b0473a2c5)
+![unnamed (1)](https://github.com/AugustinSorel/tab-picker/assets/48162609/28f2e128-1c0b-4fdd-b1df-d8fab0942890)
+
 
 ### Searching
 
-![Screenshot from 2023-07-24 14-50-15](https://github.com/AugustinSorel/tab-picker/assets/48162609/5326af78-e0cf-41a4-96eb-e5d1acd7314d)
+![unnamed](https://github.com/AugustinSorel/tab-picker/assets/48162609/ac2e43df-5f9d-42ca-bbc9-6fc8b8d10a20)
 
 ## Keymaps
 
